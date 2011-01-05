@@ -64,6 +64,10 @@ class Company(models.Model):
     melding = models.ForeignKey('Melding')
     url = models.CharField(max_length=255)
 
+    def html_link(self):
+        return "<a href=\"%s\">website</a>" % (self.url, )
+    html_link.allow_tags = True
+
     def __unicode__(self):
         return self.naam
 

@@ -28,10 +28,9 @@ def insert_verantwoordelijken(melding_id, verantwoordelijken, cursor):
 				postadres = value
 			else:
 				raise Exception('Unknown field found');
-		cursor.execute("INSERT INTO web_verantwoordelijke (melding_id," \
-				"bezoekadres, naam, postadres) VALUES " \
-				"(?, ?, ?, ?)", (melding_id, bezoekadres, naam,
-				postadres))
+        cursor.execute("INSERT INTO company_part2 (bezoekadres, naam, " \
+                        "postadres) VALUES (?, ?, ?)", ( bezoekadres, naam,
+                        postadres))
 
 def insert_ontvangers(melding_id, ontvangers, cursor):
 	for ontvanger in ontvangers:
@@ -52,13 +51,13 @@ def insert_betrokkenen(melding_id, betrokkenen, cursor):
 		betrokkene_id = cursor.lastrowid
 		insert_betrokkene_data(betrokkene_id, betrokkene, cursor)
 
-def insert_meldingen(company_id, meldingen, cursor):
+def insert_meldingen(company_url, meldingen, cursor):
 	for id in meldingen.keys():
 		melding = meldingen[id]
-		cursor.execute("INSERT INTO web_melding (company_id, id," \
+		cursor.execute("INSERT INTO melding_sloppy (company_url, id," \
 				"description, doorgifte_passend, url," \
 				"doorgifte_buiten_eu, naam_verwerking) VALUES " \
-				"(?, ?, ?, ?, ?, ?, ?)", (company_id, id,
+				"(?, ?, ?, ?, ?, ?, ?)", (company_url, id,
 				melding['description'],
 				melding['doorgifte_passend'], melding['url'],
 				melding['doorgifte_buiten_eu'],
@@ -79,11 +78,10 @@ def insert_companies(fp, cursor):
 	i = 0
 
 	for company in j:
-		cursor.execute("INSERT INTO web_company (url, name) VALUES (?, ?)",
+		cursor.execute("INSERT INTO company_part1 (url, name) VALUES (?, ?)",
 			(company["url"], company["name"]))
-		company_id = cursor.lastrowid
 
-		insert_meldingen(company_id, company["meldingen"], cursor)
+		insert_meldingen(company["url"], company["meldingen"], cursor)
 
 		i += 1
 
@@ -111,21 +109,23 @@ CREATE TABLE web_betrokkenedata (
 	name TEXT,
 	value TEXT
 );
-CREATE TABLE web_company (
-	id INTEGER PRIMARY KEY NOT NULL,
+CREATE TEMP TABLE company_part1 (
 	url text,
 	name text
+);
+CREATE TEMP TABLE company_part2 (
+	bezoekadres TEXT,
+	naam TEXT,
+	postadres TEXT
 );
 CREATE TABLE web_doel (
 	id INTEGER PRIMARY KEY NOT NULL,
 	melding_id INTEGER NOT NULL,
 	naam TEXT
 );
-CREATE TABLE web_melding (
+CREATE TEMP TABLE melding_sloppy (
 	id INTEGER,
-	company_id INTEGER,
-    -- used as foreign key
-    -- company_url TEXT,
+    company_url TEXT, -- used as foreign key
 	description TEXT,
 	doorgifte_passend INTEGER,
 	url TEXT,
@@ -137,18 +137,11 @@ CREATE TABLE web_ontvanger (
 	melding_id INTEGER,
 	naam TEXT
 );
-CREATE TABLE web_verantwoordelijke (
-	id INTEGER PRIMARY KEY NOT NULL,
-	melding_id INTEGER,
-	bezoekadres TEXT,
-	naam TEXT,
-	postadres TEXT
-);
 """
 );
 
 ncompanies = 0
-for dirname, dirnames, filenames, in os.walk('data'):
+for dirname, dirnames, filenames, in os.walk('.'):
 	for filename in filenames:
 		if filename.endswith(".json"):
 			path = os.path.join(dirname, filename)
@@ -156,5 +149,36 @@ for dirname, dirnames, filenames, in os.walk('data'):
 			ncompanies += insert_companies(fp, c)
 
 print "Inserted %d companies" % (ncompanies, )
+
+# Merge verantwoordelijke and company tables
+# XXX: This assumes that the company name uniquely identifies the company.
+# Which might not be true. There is more information hidden in the URL of the
+# company which can be used to join the two tables.
+c.execute("CREATE TEMP TABLE company_merged as select c.url as url, v.bezoekadres as " \
+            " bezoekadres, v.naam as naam, v.postadres as postadres from" \
+            " company_part1 as c INNER JOIN company_part2 as v ON v.naam " \
+            "= c.name;")
+
+# Remove the duplicates.
+c.execute("CREATE TEMP TABLE company_distinct as select DISTINCT * from company_merged")
+
+# For some reason when doing an inner join sqlite doesn't generate a _rowid_
+c.execute("CREATE TABLE web_company as select _rowid_ as id, * from company_distinct")
+
+c.execute("CREATE TABLE melding_duplicates as SELECT m.id, m.description, c.id as company_id, " \
+            " m.doorgifte_passend, m.url, m.doorgifte_buiten_eu, m.naam_verwerking FROM" \
+            " melding_sloppy as m INNER JOIN web_company as c ON c.url = "
+            " m.company_url;")
+
+# Create in between table.
+c.execute("CREATE TABLE company_melding as SELECT DISTINCT company_id, id as " \
+            " melding_id from melding_duplicates")
+
+# Create distinct meldingen table
+c.execute("CREATE TABLE melding as SELECT DISTINCT id, description, " \
+           " doorgifte_passend, url, doorgifte_buiten_eu, naam_verwerking FROM " \
+           " melding_duplicates")
+
 connection.commit()
+
 c.close()

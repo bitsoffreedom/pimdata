@@ -1,21 +1,26 @@
 from django.db import models
 
 class Betrokkene(models.Model):
-    naam = models.CharField(max_length=255)
+    betrokkene_type = models.ForeignKey('BetrokkeneType')
     melding = models.ForeignKey('Melding')
-
-    def __unicode__(self):
-        return self.naam
 
     class Meta:
         verbose_name=('Betrokkene')
         verbose_name_plural=('Betrokkenen')
 
+class BetrokkeneType(models.Model):
+    naam = models.CharField(max_length=255)
 
-class BetrokkeneData(models.Model):
+    def __unicode__(self):
+        return self.naam
+
+class DataType(models.Model):
     name = models.CharField(max_length=255)
-    value = models.CharField(max_length=255)
+
+class Data(models.Model):
     betrokkene = models.ForeignKey('Betrokkene')
+    datatype = models.ForeignKey('DataType')
+    value = models.CharField(max_length=255)
 
     def __unicode__(self):
         return self.name
@@ -37,7 +42,10 @@ class Doel(models.Model):
 
 class Melding(models.Model):
     description = models.CharField(max_length=255)
+#    doorgifte_passend = models.CharField(max_length=255)
     url = models.CharField(max_length=255)
+#    doorgifte_buiten_eu = models.CharField(max_length=255)
+    naam_verwerking = models.CharField(max_length=255)
 
     def __unicode__(self):
         return "%d" % (self.id, )
@@ -61,7 +69,7 @@ class Company(models.Model):
     bezoekadres = models.CharField(max_length=255)
     naam = models.CharField(max_length=255)
     postadres = models.CharField(max_length=255)
-    melding = models.ForeignKey('Melding')
+    meldingen = models.ManyToManyField(Melding)
     url = models.CharField(max_length=255)
 
     def html_link(self):

@@ -5,45 +5,45 @@ import json
 
 def insert_doelen(melding_id, doelen, cursor):
     for doel in doelen:
-    	cursor.execute("INSERT INTO scrape_doel (melding_id, naam) " \
-    			" VALUES (%s, %s)", (melding_id, doel))
+        cursor.execute("INSERT INTO scrape_doel (melding_id, naam) " \
+                " VALUES (%s, %s)", (melding_id, doel))
 
 def insert_verantwoordelijken(melding_id, verantwoordelijken, cursor):
     for verantwoordelijke in verantwoordelijken:
-    	naam = None
-    	bezoekadres = None
+        naam = None
+        bezoekadres = None
 
-	bezoekadres_straat = None
-	bezoekadres_stad = None
-	bezoekadres_land = None
+        bezoekadres_straat = None
+        bezoekadres_stad = None
+        bezoekadres_land = None
 
-    	postadres = None
+        postadres = None
 
-	postadres_straat = None
-	postadres_stad = None
-	postadres_land = None
+        postadres_straat = None
+        postadres_stad = None
+        postadres_land = None
 
-    	for key, value in verantwoordelijke.iteritems():
-    		if key == "Naam":
-    			if naam != None:
-    				raise Exception("Field Naam found twice")
-    			naam = value
-    		elif key == "Bezoekadres":
-    			if bezoekadres != None:
-    				raise Exception("Field Bezoekadres found twice")
-    			bezoekadres = value
+        for key, value in verantwoordelijke.iteritems():
+            if key == "Naam":
+                if naam != None:
+                    raise Exception("Field Naam found twice")
+                naam = value
+            elif key == "Bezoekadres":
+                if bezoekadres != None:
+                    raise Exception("Field Bezoekadres found twice")
+                bezoekadres = value
 
-			if bezoekadres.count("\n") == 2:
-				bezoekadres_straat, bezoekadres_stad, bezoekadres_land = bezoekadres.split("\n")
-    		elif key == "Postadres":
-    			if postadres != None:
-    				raise Exception("Field Postadres found twice")
-    			postadres = value
+            if bezoekadres.count("\n") == 2:
+                bezoekadres_straat, bezoekadres_stad, bezoekadres_land = bezoekadres.split("\n")
+            elif key == "Postadres":
+                if postadres != None:
+                    raise Exception("Field Postadres found twice")
+                postadres = value
 
-			if postadres.count("\n") == 2:
-				postadres_straat, postadres_stad, postadres_land = postadres.split("\n")
-    		else:
-    			raise Exception('Unknown field found');
+            if postadres.count("\n") == 2:
+                postadres_straat, postadres_stad, postadres_land = postadres.split("\n")
+            else:
+                raise Exception('Unknown field found');
         adres = None
         if (bezoekadres):
             adres = postadres
@@ -55,26 +55,26 @@ def insert_verantwoordelijken(melding_id, verantwoordelijken, cursor):
 
 def insert_ontvangers(melding_id, ontvangers, cursor):
     for ontvanger in ontvangers:
-    	cursor.execute("INSERT INTO scrape_ontvanger (melding_id, naam) " \
-    			" VALUES (%s, %s)", (melding_id, ontvanger));
+        cursor.execute("INSERT INTO scrape_ontvanger (melding_id, naam) " \
+                " VALUES (%s, %s)", (melding_id, ontvanger));
 
 def insert_betrokkene_data(betrokkene_id, betrokkene, cursor):
     for name, value in betrokkene.iteritems():
-    	cursor.execute("INSERT INTO scrape_data (betrokkene_id," \
-    			"name, value) VALUES (%s, %s, %s)", (betrokkene_id,
-    			name, value))
+        cursor.execute("INSERT INTO scrape_data (betrokkene_id," \
+                "name, value) VALUES (%s, %s, %s)", (betrokkene_id,
+                name, value))
 
 def insert_betrokkenen(melding_id, betrokkenen, cursor):
     for name in betrokkenen.keys():
-    	betrokkene = betrokkenen[name]
-    	cursor.execute("INSERT INTO scrape_betrokkene (melding_id, naam)" \
-    			"VALUES (%s, %s)", (melding_id, name)) 
-    	betrokkene_id = cursor.lastrowid
-    	insert_betrokkene_data(betrokkene_id, betrokkene, cursor)
+        betrokkene = betrokkenen[name]
+        cursor.execute("INSERT INTO scrape_betrokkene (melding_id, naam)" \
+                "VALUES (%s, %s)", (melding_id, name)) 
+        betrokkene_id = cursor.lastrowid
+        insert_betrokkene_data(betrokkene_id, betrokkene, cursor)
 
 def insert_meldingen(company_url, meldingen, cursor):
     for id in meldingen.keys():
-    	melding = meldingen[id]
+        melding = meldingen[id]
         try:
             melding_id = int(id)
         except TypeError:
@@ -84,48 +84,48 @@ def insert_meldingen(company_url, meldingen, cursor):
             print "description %s\n" % (melding['description'], )
             continue
 
-	SCRAPE_UNASSIGNED = 0
-	SCRAPE_TRUE = 1
-	SCRAPE_FALSE = 2
+    SCRAPE_UNASSIGNED = 0
+    SCRAPE_TRUE = 1
+    SCRAPE_FALSE = 2
 
-	doorgifte_passend_state = SCRAPE_UNASSIGNED
-	if melding['doorgifte_passend'] == True:
-		doorgifte_passend_state = SCRAPE_TRUE
-	if melding['doorgifte_passend'] == False:
-		doorgifte_passend_state = SCRAPE_FALSE
+    doorgifte_passend_state = SCRAPE_UNASSIGNED
+    if melding['doorgifte_passend'] == True:
+        doorgifte_passend_state = SCRAPE_TRUE
+    if melding['doorgifte_passend'] == False:
+        doorgifte_passend_state = SCRAPE_FALSE
 
-	doorgifte_buiten_eu_state = SCRAPE_UNASSIGNED
-	if melding['doorgifte_buiten_eu'] == True:
-		doorgifte_buiten_eu_state = SCRAPE_TRUE
-	if melding['doorgifte_buiten_eu'] == False:
-		doorgifte_buiten_eu_state = SCRAPE_FALSE
+    doorgifte_buiten_eu_state = SCRAPE_UNASSIGNED
+    if melding['doorgifte_buiten_eu'] == True:
+        doorgifte_buiten_eu_state = SCRAPE_TRUE
+    if melding['doorgifte_buiten_eu'] == False:
+        doorgifte_buiten_eu_state = SCRAPE_FALSE
 
         cursor.execute("INSERT INTO scrape_melding (company_url, id," \
-    			"description, doorgifte_passend, url," \
-    			"doorgifte_buiten_eu, naam_verwerking) VALUES " \
-    			"(%s, %s, %s, %s, %s, %s, %s)", (company_url, melding_id,
-			melding['description'], doorgifte_passend_state,
-			melding['url'], doorgifte_buiten_eu_state,
-			melding['naam_verwerking']))
-    	if "betrokkenen" in melding.keys():
-    		insert_betrokkenen(melding_id, melding["betrokkenen"], cursor)
-    	if "ontvangers" in melding.keys():
-    		insert_ontvangers(melding_id, melding["ontvangers"], cursor)
-    	if "verantwoordelijken" in melding.keys():
-    		insert_verantwoordelijken(melding_id, melding["verantwoordelijken"], cursor)
-    	if "doelen" in melding.keys():
-    		insert_doelen(melding_id, melding["doelen"], cursor)
+                "description, doorgifte_passend, url," \
+                "doorgifte_buiten_eu, naam_verwerking) VALUES " \
+                "(%s, %s, %s, %s, %s, %s, %s)", (company_url, melding_id,
+            melding['description'], doorgifte_passend_state,
+            melding['url'], doorgifte_buiten_eu_state,
+            melding['naam_verwerking']))
+        if "betrokkenen" in melding.keys():
+            insert_betrokkenen(melding_id, melding["betrokkenen"], cursor)
+        if "ontvangers" in melding.keys():
+            insert_ontvangers(melding_id, melding["ontvangers"], cursor)
+        if "verantwoordelijken" in melding.keys():
+            insert_verantwoordelijken(melding_id, melding["verantwoordelijken"], cursor)
+        if "doelen" in melding.keys():
+            insert_doelen(melding_id, melding["doelen"], cursor)
 
 def insert_bedrijven(json, cursor):
     i = 0
 
     for company in json:
-    	cursor.execute("INSERT INTO scrape_bedrijf (url, name) VALUES (%s, %s)",
-    		(company["url"], company["name"]))
+        cursor.execute("INSERT INTO scrape_bedrijf (url, name) VALUES (%s, %s)",
+            (company["url"], company["name"]))
 
-    	insert_meldingen(company["url"], company["meldingen"], cursor)
+        insert_meldingen(company["url"], company["meldingen"], cursor)
 
-    	i += 1
+        i += 1
 
     return i
 
@@ -178,12 +178,11 @@ CREATE TABLE scrape_doel (
 ncompanies = 0
 for dirname, dirnames, filenames, in os.walk('.'):
     for filename in filenames:
-    	if filename.endswith(".json"):
-
-    		path = os.path.join(dirname, filename)
-    		fp = open(path, 'r')
-		j = json.load(fp)
-    		ncompanies += insert_bedrijven(j, c)
+        if filename.endswith(".json"):
+            path = os.path.join(dirname, filename)
+            fp = open(path, 'r')
+            j = json.load(fp)
+            ncompanies += insert_bedrijven(j, c)
 
 connection.commit()
 c.close()

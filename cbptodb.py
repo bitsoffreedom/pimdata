@@ -13,13 +13,23 @@ def insert_verantwoordelijken(melding_id, verantwoordelijken, cursor):
         naam = None
         bezoekadres = None
 
-        bezoekadres_straat = None
+        bezoekadres_lijn1 = None
+        bezoekadres_lijn2 = None
+        bezoekadres_lijn3 = None
+
+        bezoekadres_adres = None
+        bezoekadres_postcode = None
         bezoekadres_stad = None
         bezoekadres_land = None
 
         postadres = None
 
-        postadres_straat = None
+        postadres_lijn1 = None
+        postadres_lijn2 = None
+        postadres_lijn3 = None
+
+        postadres_adres = None
+        postadres_postcode = None
         postadres_stad = None
         postadres_land = None
 
@@ -33,25 +43,39 @@ def insert_verantwoordelijken(melding_id, verantwoordelijken, cursor):
                     raise Exception("Field Bezoekadres found twice")
                 bezoekadres = value
 
-            if bezoekadres.count("\n") == 2:
-                bezoekadres_straat, bezoekadres_stad, bezoekadres_land = bezoekadres.split("\n")
+                if bezoekadres != None and bezoekadres.count("\n") == 2:
+                    bezoekadres_lijn1, bezoekadres_lijn2, bezoekadres_lijn3 = bezoekadres.split("\n")
+
+                    bezoekadres_adres = bezoekadres_lijn1
+                    bezoekadres_postcode, bezoekadres_stad = bezoekadres_lijn2.split(" ", 1)
+                    bezoekadres_land = bezoekadres_lijn3
+
             elif key == "Postadres":
                 if postadres != None:
                     raise Exception("Field Postadres found twice")
                 postadres = value
 
-            if postadres.count("\n") == 2:
-                postadres_straat, postadres_stad, postadres_land = postadres.split("\n")
+                if postadres != None and postadres.count("\n") == 2:
+                    postadres_lijn1, postadres_lijn2, postadres_lijn3 = postadres.split("\n")
+
+                    postadres_adres = postadres_lijn1
+                    postadres_postcode, postadres_stad = postadres_lijn2.split(" ", 1)
+                    postadres_land = postadres_lijn3
             else:
                 raise Exception('Unknown field found');
+
         adres = None
         if (bezoekadres):
             adres = postadres
         else:
             adres = bezoekadres
-        cursor.execute("INSERT INTO scrape_verantwoordelijke (bezoekadres, naam, " \
-                        "postadres) VALUES (%s, %s, %s)", ( bezoekadres, naam,
-                        adres))
+        cursor.execute("INSERT INTO scrape_verantwoordelijke " \
+            "(bezoekadres_adres, bezoekadres_postcode, bezoekadres_stad, " \
+            "bezoekadres_land, naam, postadres_adres, postadres_postcode, " \
+            "postadres_stad, postadres_land) VALUES (%s, %s, %s, %s, %s, " \
+            "%s, %s, %s, %s)", (bezoekadres_adres, bezoekadres_postcode,
+            bezoekadres_stad, bezoekadres_land, naam, postadres_adres,
+            postadres_postcode, postadres_stad, postadres_land))
 
 def insert_ontvangers(melding_id, ontvangers, cursor):
     for ontvanger in ontvangers:
@@ -84,23 +108,23 @@ def insert_meldingen(company_url, meldingen, cursor):
             print "description %s\n" % (melding['description'], )
             continue
 
-    SCRAPE_UNASSIGNED = 0
-    SCRAPE_TRUE = 1
-    SCRAPE_FALSE = 2
+            SCRAPE_UNASSIGNED = 0
+            SCRAPE_TRUE = 1
+            SCRAPE_FALSE = 2
 
-    doorgifte_passend_state = SCRAPE_UNASSIGNED
-    if melding['doorgifte_passend'] == True:
-        doorgifte_passend_state = SCRAPE_TRUE
-    if melding['doorgifte_passend'] == False:
-        doorgifte_passend_state = SCRAPE_FALSE
+            doorgifte_passend_state = SCRAPE_UNASSIGNED
+            if melding['doorgifte_passend'] == True:
+                doorgifte_passend_state = SCRAPE_TRUE
+            if melding['doorgifte_passend'] == False:
+                doorgifte_passend_state = SCRAPE_FALSE
 
-    doorgifte_buiten_eu_state = SCRAPE_UNASSIGNED
-    if melding['doorgifte_buiten_eu'] == True:
-        doorgifte_buiten_eu_state = SCRAPE_TRUE
-    if melding['doorgifte_buiten_eu'] == False:
-        doorgifte_buiten_eu_state = SCRAPE_FALSE
+            doorgifte_buiten_eu_state = SCRAPE_UNASSIGNED
+            if melding['doorgifte_buiten_eu'] == True:
+                doorgifte_buiten_eu_state = SCRAPE_TRUE
+            if melding['doorgifte_buiten_eu'] == False:
+                doorgifte_buiten_eu_state = SCRAPE_FALSE
 
-        cursor.execute("INSERT INTO scrape_melding (company_url, id," \
+            cursor.execute("INSERT INTO scrape_melding (company_url, id," \
                 "description, doorgifte_passend, url," \
                 "doorgifte_buiten_eu, naam_verwerking) VALUES " \
                 "(%s, %s, %s, %s, %s, %s, %s)", (company_url, melding_id,
@@ -164,9 +188,17 @@ CREATE TABLE scrape_ontvanger (
     naam TEXT
 );
 CREATE TABLE scrape_verantwoordelijke (
-    bezoekadres TEXT,
+    bezoekadres_adres TEXT,
+    bezoekadres_postcode TEXT,
+    bezoekadres_stad TEXT,
+    bezoekadres_land TEXT,
+
     naam TEXT,
-    postadres TEXT
+
+    postadres_adres TEXT,
+    postadres_postcode TEXT,
+    postadres_stad TEXT,
+    postadres_land TEXT
 );
 CREATE TABLE scrape_doel (
     id SERIAL PRIMARY KEY NOT NULL,
